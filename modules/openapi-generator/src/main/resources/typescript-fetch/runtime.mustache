@@ -1,6 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 {{>licenseInfo}}
+import EventSource from 'eventsource';
 
 export const BASE_PATH = "{{{basePath}}}".replace(/\/+$/, "");
 
@@ -40,6 +41,16 @@ export class BaseAPI {
             return response;
         }
         throw response;
+    }
+
+    protected async requestEventSource(context: RequestOpts): Promise<EventSource> {
+        const { url, init } = this.createFetchParams(context);
+
+        return new Promise(resolve => {
+            resolve(new EventSource(url, {
+                headers: init.headers,
+            }));
+        });
     }
 
     private createFetchParams(context: RequestOpts) {

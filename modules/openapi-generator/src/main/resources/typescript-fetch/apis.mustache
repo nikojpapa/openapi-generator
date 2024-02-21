@@ -205,17 +205,7 @@ export class {{classname}} extends runtime.BaseAPI {
 
         {{/isOAuth}}
         {{/authMethods}}
-        const path = `{{{path}}}`{{#pathParams}}.replace(`{${"{{baseName}}"}}`, encodeURIComponent(String(requestParameters.{{paramName}}))){{/pathParams}};
-
         {{#produces}}
-        {{#isEventStream}}
-        return new Promise(resolve => {
-            resolve(new EventSource(path, {
-                headers: headerParameters,
-            }));
-        });
-        {{/isEventStream}}
-        {{^isEventStream}}
         {{#hasFormParams}}
         const consumes: runtime.Consume[] = [
             {{#consumes}}
@@ -261,8 +251,8 @@ export class {{classname}} extends runtime.BaseAPI {
         {{/isListContainer}}
         {{/formParams}}
         {{/hasFormParams}}
-        const response = await this.request({
-            path: path,
+        const requestContext = {
+            path: `{{{path}}}`{{#pathParams}}.replace(`{${"{{baseName}}"}}`, encodeURIComponent(String(requestParameters.{{paramName}}))){{/pathParams}},
             method: '{{httpMethod}}',
             headers: headerParameters,
             query: queryParameters,
@@ -284,7 +274,13 @@ export class {{classname}} extends runtime.BaseAPI {
             {{#hasFormParams}}
             body: formParams,
             {{/hasFormParams}}
-        });
+        } as runtime.RequestOpts;
+
+        {{#isEventStream}}
+        return this.requestEventSource(requestContext);
+        {{/isEventStream}}
+        {{^isEventStream}}
+        const response = await this.request(requestContext);
 
         {{#returnType}}
         {{#isResponseFile}}
@@ -335,7 +331,7 @@ export class {{classname}} extends runtime.BaseAPI {
      *
      * Because this operation produces 'text/event-stream', this call will return an EventSource whose data
      * will be of type {{#returnType}}{{{returnType}}}{{/returnType}}
-     {{/isEventStream}}
+    {{/isEventStream}}
      */
     {{^useSingleRequestParameter}}
     async {{nickname}}({{#allParams}}{{paramName}}{{^required}}?{{/required}}: {{#isEnum}}{{{datatypeWithEnum}}}{{/isEnum}}{{^isEnum}}{{{dataType}}}{{#isNullable}} | null{{/isNullable}}{{/isEnum}}{{#hasMore}}, {{/hasMore}}{{/allParams}}): Promise<{{#returnType}}{{#isEventStream}}EventSource{{/isEventStream}}{{^isEventStream}}{{{returnType}}}{{/isEventStream}}{{/returnType}}{{^returnType}}void{{/returnType}}> {

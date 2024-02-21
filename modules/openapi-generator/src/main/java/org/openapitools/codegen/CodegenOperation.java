@@ -25,7 +25,7 @@ import java.util.*;
 public class CodegenOperation {
     public final List<CodegenProperty> responseHeaders = new ArrayList<CodegenProperty>();
     public boolean hasAuthMethods, hasConsumes, hasProduces, hasParams, hasOptionalParams, hasRequiredParams,
-            returnTypeIsPrimitive, returnSimpleType, subresourceOperation, isMap,
+            returnTypeIsPrimitive, returnSimpleType, subresourceOperation, isEventStream, isMap,
             isArray, isMultipart, isVoid = false,
             hasVersionHeaders = false, hasVersionQueryParams = false,
             isResponseBinary = false, isResponseFile = false, isResponseOptional = false, hasReference = false, defaultReturnType = false,

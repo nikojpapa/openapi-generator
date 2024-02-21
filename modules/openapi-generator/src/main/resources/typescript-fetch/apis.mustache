@@ -3,6 +3,7 @@
 {{>licenseInfo}}
 
 import * as runtime from '../runtime{{importFileExtension}}';
+import EventSource from 'eventsource';
 {{#imports.0}}
 import type {
   {{#imports}}
@@ -56,7 +57,7 @@ export interface {{classname}}Interface {
      * @throws {RequiredError}
      * @memberof {{classname}}Interface
      */
-    {{nickname}}Raw({{#allParams.0}}requestParameters: {{#prefixParameterInterfaces}}{{classname}}{{/prefixParameterInterfaces}}{{operationIdCamelCase}}Request, {{/allParams.0}}initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<{{{returnType}}}{{^returnType}}void{{/returnType}}>>;
+    {{nickname}}Raw({{#allParams.0}}requestParameters: {{#prefixParameterInterfaces}}{{classname}}{{/prefixParameterInterfaces}}{{operationIdCamelCase}}Request, {{/allParams.0}}initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<{{#isEventStream}}EventSource{{/isEventStream}}{{^isEventStream}}runtime.ApiResponse<{{{returnType}}}{{^returnType}}void{{/returnType}}>>;
 
     /**
      {{#notes}}
@@ -104,7 +105,7 @@ export class {{classname}} extends runtime.BaseAPI {
      * @deprecated
      {{/isDeprecated}}
      */
-    async {{nickname}}Raw({{#allParams.0}}requestParameters: {{#prefixParameterInterfaces}}{{classname}}{{/prefixParameterInterfaces}}{{operationIdCamelCase}}Request, {{/allParams.0}}initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<{{{returnType}}}{{^returnType}}void{{/returnType}}>> {
+    async {{nickname}}Raw({{#allParams.0}}requestParameters: {{#prefixParameterInterfaces}}{{classname}}{{/prefixParameterInterfaces}}{{operationIdCamelCase}}Request, {{/allParams.0}}initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<{{#isEventStream}}EventSource{{/isEventStream}}{{^isEventStream}}runtime.ApiResponse<{{{returnType}}}{{^returnType}}void{{/returnType}}>> {
         {{#allParams}}
         {{#required}}
         if (!runtime.exists(requestParameters, '{{paramName}}')) {
@@ -213,6 +214,17 @@ export class {{classname}} extends runtime.BaseAPI {
 
         {{/isOAuth}}
         {{/authMethods}}
+        const path = `{{{path}}}`{{#pathParams}}.replace(`{${"{{baseName}}"}}`, encodeURIComponent(String(requestParameters.{{paramName}}))){{/pathParams}};
+
+        {{#produces}}
+        {{#isEventStream}}
+        return new Promise(resolve => {
+            resolve(new EventSource(path, {
+                headers: headerParameters,
+            }));
+        });
+        {{/isEventStream}}
+        {{^isEventStream}}
         {{#hasFormParams}}
         const consumes: runtime.Consume[] = [
             {{#consumes}}
@@ -268,7 +280,7 @@ export class {{classname}} extends runtime.BaseAPI {
         {{/formParams}}
         {{/hasFormParams}}
         const response = await this.request({
-            path: `{{{path}}}`{{#pathParams}}.replace(`{${"{{baseName}}"}}`, encodeURIComponent(String(requestParameters['{{paramName}}']))){{/pathParams}},
+            path: path,
             method: '{{httpMethod}}',
             headers: headerParameters,
             query: queryParameters,
@@ -340,6 +352,8 @@ export class {{classname}} extends runtime.BaseAPI {
         {{^returnType}}
         return new runtime.VoidApiResponse(response);
         {{/returnType}}
+        {{/isEventStream}}
+        {{/produces}}
     }
 
     /**
@@ -349,12 +363,17 @@ export class {{classname}} extends runtime.BaseAPI {
      {{#summary}}
      * {{&summary}}
      {{/summary}}
+     {{#isEventStream}}
+     *
+     * Because this operation produces 'text/event-stream', this call will return an EventSource whose data
+     * will be of type {{#returnType}}{{{returnType}}}{{/returnType}}
+     {{/isEventStream}}
      {{#isDeprecated}}
      * @deprecated
      {{/isDeprecated}}
      */
     {{^useSingleRequestParameter}}
-    async {{nickname}}({{#allParams}}{{paramName}}{{^required}}?{{/required}}: {{#isEnum}}{{{datatypeWithEnum}}}{{/isEnum}}{{^isEnum}}{{{dataType}}}{{#isNullable}}{{#required}} | null{{/required}}{{/isNullable}}{{/isEnum}}, {{/allParams}}initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<{{{returnType}}}{{#returnType}}{{#isResponseOptional}} | null | undefined {{/isResponseOptional}}{{/returnType}}{{^returnType}}void{{/returnType}}> {
+    async {{nickname}}({{#allParams}}{{paramName}}{{^required}}?{{/required}}: {{#isEnum}}{{{datatypeWithEnum}}}{{/isEnum}}{{^isEnum}}{{{dataType}}}{{#isNullable}}{{#required}} | null{{/required}}{{/isNullable}}{{/isEnum}}, {{/allParams}}initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<{{{returnType}}}{{#returnType}}{{#isResponseOptional}} | null | undefined {{/isResponseOptional}}{{#isEventStream}}EventSource{{/isEventStream}}{{^isEventStream}}{{/returnType}}{{^returnType}}void{{/returnType}}> {
         {{#returnType}}
         const response = await this.{{nickname}}Raw({{#allParams.0}}{ {{#allParams}}{{paramName}}: {{paramName}}{{^-last}}, {{/-last}}{{/allParams}} }, {{/allParams.0}}initOverrides);
         {{#isResponseOptional}}
@@ -370,7 +389,7 @@ export class {{classname}} extends runtime.BaseAPI {
         }
         {{/isResponseOptional}}
         {{^isResponseOptional}}
-        return await response.value();
+        return await response{{^isEventStream}}.value(){{/isEventStream}};
         {{/isResponseOptional}}
         {{/returnType}}
         {{^returnType}}
@@ -379,7 +398,7 @@ export class {{classname}} extends runtime.BaseAPI {
     }
     {{/useSingleRequestParameter}}
     {{#useSingleRequestParameter}}
-    async {{nickname}}({{#allParams.0}}requestParameters: {{#prefixParameterInterfaces}}{{classname}}{{/prefixParameterInterfaces}}{{operationIdCamelCase}}Request{{^hasRequiredParams}} = {}{{/hasRequiredParams}}, {{/allParams.0}}initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<{{{returnType}}}{{#returnType}}{{#isResponseOptional}} | null | undefined {{/isResponseOptional}}{{/returnType}}{{^returnType}}void{{/returnType}}> {
+    async {{nickname}}({{#allParams.0}}requestParameters: {{#prefixParameterInterfaces}}{{classname}}{{/prefixParameterInterfaces}}{{operationIdCamelCase}}Request{{^hasRequiredParams}} = {}{{/hasRequiredParams}}, {{/allParams.0}}initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<{{{returnType}}}{{#returnType}}{{#isResponseOptional}} | null | undefined {{/isResponseOptional}}{{#isEventStream}}EventSource{{/isEventStream}}{{^isEventStream}}{{/returnType}}{{^returnType}}void{{/returnType}}> {
         {{#returnType}}
         const response = await this.{{nickname}}Raw({{#allParams.0}}requestParameters, {{/allParams.0}}initOverrides);
         {{#isResponseOptional}}
@@ -395,7 +414,7 @@ export class {{classname}} extends runtime.BaseAPI {
         }
         {{/isResponseOptional}}
         {{^isResponseOptional}}
-        return await response.value();
+        return await response{{^isEventStream}}.value(){{/isEventStream}};
         {{/isResponseOptional}}
         {{/returnType}}
         {{^returnType}}

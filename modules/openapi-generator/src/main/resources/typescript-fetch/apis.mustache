@@ -3,6 +3,7 @@
 {{>licenseInfo}}
 
 import * as runtime from '../runtime';
+import EventSource from 'eventsource';
 {{#imports.0}}
 import {
     {{#imports}}
@@ -47,7 +48,7 @@ export interface {{classname}}Interface {
      * @throws {RequiredError}
      * @memberof {{classname}}Interface
      */
-    {{nickname}}Raw({{#allParams.0}}requestParameters: {{#prefixParameterInterfaces}}{{classname}}{{/prefixParameterInterfaces}}{{operationIdCamelCase}}Request{{/allParams.0}}): Promise<runtime.ApiResponse<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}void{{/returnType}}>>;
+    {{nickname}}Raw({{#allParams.0}}requestParameters: {{#prefixParameterInterfaces}}{{classname}}{{/prefixParameterInterfaces}}{{operationIdCamelCase}}Request{{/allParams.0}}): Promise<{{#isEventStream}}EventSource{{/isEventStream}}{{^isEventStream}}runtime.ApiResponse<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}void{{/returnType}}{{/isEventStream}}>>;
 
     /**
      {{#notes}}
@@ -89,7 +90,7 @@ export class {{classname}} extends runtime.BaseAPI {
      * {{&summary}}
      {{/summary}}
      */
-    async {{nickname}}Raw({{#allParams.0}}requestParameters: {{#prefixParameterInterfaces}}{{classname}}{{/prefixParameterInterfaces}}{{operationIdCamelCase}}Request{{/allParams.0}}): Promise<runtime.ApiResponse<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}void{{/returnType}}>> {
+    async {{nickname}}Raw({{#allParams.0}}requestParameters: {{#prefixParameterInterfaces}}{{classname}}{{/prefixParameterInterfaces}}{{operationIdCamelCase}}Request{{/allParams.0}}): Promise<{{#isEventStream}}EventSource{{/isEventStream}}{{^isEventStream}}runtime.ApiResponse<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}void{{/returnType}}>{{/isEventStream}}> {
         {{#allParams}}
         {{#required}}
         if (requestParameters.{{paramName}} === null || requestParameters.{{paramName}} === undefined) {
@@ -204,6 +205,17 @@ export class {{classname}} extends runtime.BaseAPI {
 
         {{/isOAuth}}
         {{/authMethods}}
+        const path = `{{{path}}}`{{#pathParams}}.replace(`{${"{{baseName}}"}}`, encodeURIComponent(String(requestParameters.{{paramName}}))){{/pathParams}};
+
+        {{#produces}}
+        {{#isEventStream}}
+        return new Promise(resolve => {
+            resolve(new EventSource(path, {
+                headers: headerParameters,
+            }));
+        });
+        {{/isEventStream}}
+        {{^isEventStream}}
         {{#hasFormParams}}
         const consumes: runtime.Consume[] = [
             {{#consumes}}
@@ -250,7 +262,7 @@ export class {{classname}} extends runtime.BaseAPI {
         {{/formParams}}
         {{/hasFormParams}}
         const response = await this.request({
-            path: `{{{path}}}`{{#pathParams}}.replace(`{${"{{baseName}}"}}`, encodeURIComponent(String(requestParameters.{{paramName}}))){{/pathParams}},
+            path: path,
             method: '{{httpMethod}}',
             headers: headerParameters,
             query: queryParameters,
@@ -308,6 +320,8 @@ export class {{classname}} extends runtime.BaseAPI {
         {{^returnType}}
         return new runtime.VoidApiResponse(response);
         {{/returnType}}
+        {{/isEventStream}}
+        {{/produces}}
     }
 
     /**
@@ -317,12 +331,17 @@ export class {{classname}} extends runtime.BaseAPI {
      {{#summary}}
      * {{&summary}}
      {{/summary}}
+     {{#isEventStream}}
+     *
+     * Because this operation produces 'text/event-stream', this call will return an EventSource whose data
+     * will be of type {{#returnType}}{{{returnType}}}{{/returnType}}
+     {{/isEventStream}}
      */
     {{^useSingleRequestParameter}}
-    async {{nickname}}({{#allParams}}{{paramName}}{{^required}}?{{/required}}: {{#isEnum}}{{{datatypeWithEnum}}}{{/isEnum}}{{^isEnum}}{{{dataType}}}{{#isNullable}} | null{{/isNullable}}{{/isEnum}}{{#hasMore}}, {{/hasMore}}{{/allParams}}): Promise<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}void{{/returnType}}> {
+    async {{nickname}}({{#allParams}}{{paramName}}{{^required}}?{{/required}}: {{#isEnum}}{{{datatypeWithEnum}}}{{/isEnum}}{{^isEnum}}{{{dataType}}}{{#isNullable}} | null{{/isNullable}}{{/isEnum}}{{#hasMore}}, {{/hasMore}}{{/allParams}}): Promise<{{#returnType}}{{#isEventStream}}EventSource{{/isEventStream}}{{^isEventStream}}{{{returnType}}}{{/isEventStream}}{{/returnType}}{{^returnType}}void{{/returnType}}> {
         {{#returnType}}
         const response = await this.{{nickname}}Raw({{#allParams.0}}{ {{#allParams}}{{paramName}}: {{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}} }{{/allParams.0}});
-        return await response.value();
+        return await response{{^isEventStream}}.value(){{/isEventStream}};
         {{/returnType}}
         {{^returnType}}
         await this.{{nickname}}Raw({{#allParams.0}}{ {{#allParams}}{{paramName}}: {{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}} }{{/allParams.0}});
@@ -330,10 +349,10 @@ export class {{classname}} extends runtime.BaseAPI {
     }
     {{/useSingleRequestParameter}}
     {{#useSingleRequestParameter}}
-    async {{nickname}}({{#allParams.0}}requestParameters: {{#prefixParameterInterfaces}}{{classname}}{{/prefixParameterInterfaces}}{{operationIdCamelCase}}Request{{/allParams.0}}): Promise<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}void{{/returnType}}> {
+    async {{nickname}}({{#allParams.0}}requestParameters: {{#prefixParameterInterfaces}}{{classname}}{{/prefixParameterInterfaces}}{{operationIdCamelCase}}Request{{/allParams.0}}): Promise<{{#returnType}}{{#isEventStream}}EventSource{{/isEventStream}}{{^isEventStream}}{{{returnType}}}{{/isEventStream}}{{/returnType}}{{^returnType}}void{{/returnType}}> {
         {{#returnType}}
         const response = await this.{{nickname}}Raw({{#allParams.0}}requestParameters{{/allParams.0}});
-        return await response.value();
+        return await response{{^isEventStream}}.value(){{/isEventStream}};
         {{/returnType}}
         {{^returnType}}
         await this.{{nickname}}Raw({{#allParams.0}}requestParameters{{/allParams.0}});

@@ -5376,6 +5376,7 @@ public class DefaultCodegen implements CodegenConfig {
             if (!existingMediaTypes.contains(encodedKey)) {
                 Map<String, String> mediaType = new HashMap<String, String>();
                 mediaType.put("mediaType", encodedKey);
+                mediaType.put("isEventStream", encodedKey.equals("text/event-stream") ? "true" : null);
 
                 count += 1;
                 if (count < produces.size()) {
@@ -5391,6 +5392,7 @@ public class DefaultCodegen implements CodegenConfig {
 
                 codegenOperation.produces.add(mediaType);
                 codegenOperation.hasProduces = Boolean.TRUE;
+                codegenOperation.isEventStream = encodedKey.equals("text/event-stream");
             }
         }
     }
